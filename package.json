@@ -1,0 +1,50 @@
+{
+  "name": "househelp-tracker",
+  "version": "1.0.0",
+  "description": "Voice-first AI assistant for domestic workforce attendance and payroll management. Built for Indian households. Speaks Hindi, English, and Hinglish.",
+  "author": "Piyush Pujari",
+  "license": "MIT",
+  "homepage": "https://github.com/PujariJee/Bolke-househelp-tracker",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PujariJee/Bolke-househelp-tracker.git"
+  },
+  "keywords": [
+    "ai",
+    "voice-assistant",
+    "hinglish",
+    "hindi",
+    "groq",
+    "whisper",
+    "llama",
+    "payroll",
+    "domestic-workers",
+    "india",
+    "speech-recognition",
+    "text-to-speech",
+    "google-sheets",
+    "serverless",
+    "single-file-app"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "start": "open househelp-tracker.html",
+    "serve": "npx serve . --listen 3000",
+    "lint": "echo 'No linter configured — single file project'",
+    "test": "echo 'No automated tests — see CLAUDE.md for manual testing checklist'"
+  },
+  "notes": {
+    "architecture": "Single HTML file — no build step, no bundler, no dependencies",
+    "runtime": "Browser only (Chrome recommended for full voice support)",
+    "apis": {
+      "chat": "Groq LLaMA 3.3 70B via api.groq.com/openai/v1/chat/completions",
+      "stt": "Groq Whisper via api.groq.com/openai/v1/audio/transcriptions",
+      "tts": "Web Speech Synthesis API (browser-native, free)",
+      "storage": "Google Sheets via user-deployed Google Apps Script"
+    }
+  }
+}
