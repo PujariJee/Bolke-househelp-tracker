@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Househelp Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f4ef; min-height: 100vh; display: flex; flex-direction: column; }
+
+  header { background: #fff; border-bottom: 1px solid #e5e3db; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  header h1 { font-size: 16px; font-weight: 600; color: #1a1a18; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .badge { background: #e8f5ee; color: #1a6e46; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  .sheets-status { font-size: 11px; padding: 2px 10px; border-radius: 99px; font-weight: 600; }
+  .sheets-status.connected { background: #e8f5ee; color: #1a6e46; }
+  .sheets-status.disconnected { background: #faeeda; color: #633806; cursor: pointer; }
+  .setup-btn { font-size: 12px; background: #534AB7; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+
+  .main { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 57px); }
+
+  .chat-panel { flex: 1; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e5e3db; min-width: 0; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.55; word-break: break-word; }
+  .msg.user { background: #534AB7; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.bot { background: #f1efe8; color: #1a1a18; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg.bot strong { display: block; font-size: 11px; font-weight: 600; color: #888; margin-bottom: 3px; }
+
+  .mic-area { padding: 8px 14px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .mic-status { font-size: 12px; color: #666; min-height: 18px; text-align: center; }
+  .mic-hint { font-size: 11px; color: #aaa; text-align: center; }
+
+  /* OpenAI key notice */
+  .key-notice { background: #f0eeff; border: 1px solid #c8c4f0; border-radius: 8px; padding: 10px 14px; margin: 8px 14px; font-size: 12px; color: #333; line-height: 1.6; display: none; }
+  .key-notice a { color: #534AB7; font-weight: 600; }
+
+  .chat-input-row { display: flex; gap: 8px; padding: 10px 14px 14px; border-top: 1px solid #e5e3db; align-items: center; }
+  .chat-input-row input { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; outline: none; min-width: 0; }
+  .chat-input-row input:focus { border-color: #534AB7; }
+  #sendBtn { background: #534AB7; color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer; font-weight: 500; white-space: nowrap; }
+  #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Big mic button */
+  #micBtn {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #534AB7; color: #fff;
+    border: none; font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(83,74,183,0.35);
+    transition: background 0.15s, transform 0.1s;
+    user-select: none; -webkit-user-select: none;
+    touch-action: none;
+  }
+  #micBtn.listening { background: #e24b4a; box-shadow: 0 2px 12px rgba(226,75,74,0.45); animation: pulse 1s ease-in-out infinite; }
+  #micBtn.processing { background: #f5a623; box-shadow: 0 2px 12px rgba(245,166,35,0.4); animation: none; }
+  #micBtn:active { transform: scale(0.93); }
+  #micBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+
+  /* Records panel */
+  .records-panel { width: 300px; display: flex; flex-direction: column; background: #fafaf7; overflow: hidden; flex-shrink: 0; }
+  .records-header { padding: 12px 14px; border-bottom: 1px solid #e5e3db; display: flex; align-items: center; justify-content: space-between; }
+  .records-header h2 { font-size: 13px; font-weight: 600; color: #1a1a18; }
+  .records-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .worker-card { background: #fff; border: 1px solid #e5e3db; border-radius: 10px; padding: 11px; }
+  .worker-name { font-size: 14px; font-weight: 600; color: #1a1a18; margin-bottom: 2px; }
+  .worker-meta { font-size: 12px; color: #888; margin-bottom: 7px; }
+  .absence-list { display: flex; flex-direction: column; gap: 2px; }
+  .absence-item { font-size: 12px; display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px solid #f0ede5; }
+  .absence-item:last-child { border-bottom: none; }
+  .half-tag { background: #faeeda; color: #633806; font-size: 10px; padding: 1px 6px; border-radius: 99px; }
+  .absent-tag { background: #fcebeb; color: #791f1f; font-size: 10px; padding: 1px 6px; border-radius: 99px; }
+  .empty-state { text-align: center; padding: 36px 16px; color: #aaa; font-size: 13px; line-height: 1.6; }
+  .clear-btn { font-size: 11px; background: none; border: 1px solid #ddd; border-radius: 6px; padding: 3px 8px; cursor: pointer; color: #888; }
+
+  .typing { display: flex; gap: 4px; align-items: center; padding: 8px 12px; }
+  .typing span { width: 7px; height: 7px; background: #bbb; border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+  /* Modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .modal-bg.hidden { display: none; }
+  .modal { background: #fff; border-radius: 14px; padding: 22px; max-width: 440px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 10px; }
+  .modal ol { font-size: 13px; color: #333; line-height: 1.9; padding-left: 18px; margin-bottom: 14px; }
+  .modal label { font-size: 12px; font-weight: 600; color: #444; display: block; margin-bottom: 4px; margin-top: 10px; }
+  .modal input[type=url], .modal input[type=password], .modal input[type=text] {
+    width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 13px; outline: none; margin-bottom: 4px;
+  }
+  .modal input:focus { border-color: #534AB7; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .modal-btns button { border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; cursor: pointer; font-weight: 500; }
+  .btn-cancel { background: #f1efe8; color: #555; }
+  .btn-save { background: #534AB7; color: #fff; }
+  .code-block { background: #f5f4ef; border-radius: 8px; padding: 10px 12px; font-size: 11px; font-family: monospace; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.6; color: #333; border: 1px solid #e5e3db; max-height: 140px; overflow-y: auto; }
+  .copy-btn { font-size: 11px; background: #534AB7; color: #fff; border: none; border-radius: 5px; padding: 4px 10px; cursor: pointer; margin-bottom: 12px; display: inline-block; }
+  .section-title { font-size: 13px; font-weight: 700; color: #1a1a18; margin: 16px 0 6px; border-top: 1px solid #eee; padding-top: 14px; }
+
+  @media (max-width: 600px) { .records-panel { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- Settings Modal -->
+<div class="modal-bg hidden" id="modalBg">
+  <div class="modal">
+    <h2>⚙️ Settings</h2>
+
+    <!-- OpenAI key for Whisper -->
+    <div class="section-title">🤖 AI Chat + 🎤 Voice — both use Groq (Free)</div>
+    <p>One free Groq key powers both the chat (LLaMA 3) and voice (Whisper). If you already added it below, you're all set!</p>
+    <div class="section-title">🎤 Voice Input (Whisper AI)</div>
+    <p>Whisper on Groq is free, fast, and understands Indian accents and Hinglish perfectly:</p>
+    <ol>
+      <li>Go to <strong>console.groq.com</strong> → sign up free</li>
+      <li>Click <em>API Keys</em> → click <em>Create API Key</em></li>
+      <li>Copy and paste it below</li>
+    </ol>
+    <label>Groq API Key (for voice — free)</label>
+    <input type="password" id="openaiKeyInput" placeholder="gsk_..." />
+
+    <!-- Google Sheets -->
+    <div class="section-title">📊 Google Sheets (permanent storage)</div>
+    <ol>
+      <li>Go to <strong>script.google.com</strong> → New project</li>
+      <li>Delete existing code, paste the code below, save (Ctrl+S)</li>
+      <li>Deploy → New deployment → Web app → Anyone → Deploy</li>
+      <li>Copy the Web App URL and paste below</li>
+    </ol>
+    <div class="code-block" id="gasCode"></div>
+    <button class="copy-btn" id="copyBtn" onclick="copyGasCode()">📋 Copy code</button>
+    <label>Google Sheets Web App URL</label>
+    <input type="url" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/..." />
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <h1>🏠 Househelp Tracker</h1>
+  <div class="header-right">
+    <span class="badge">AI Powered</span>
+    <span class="sheets-status disconnected" id="sheetsStatus">⚠ Sheets not set</span>
+    <button class="setup-btn" onclick="openModal()">⚙ Settings</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="chat-panel">
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg bot"><strong>Assistant</strong>
+        Namaste! 🙏 I am your househelp tracker assistant.<br><br>
+        Tap ⚙ Settings to add your free <strong>Groq API key</strong> (powers both chat and voice) and connect Google Sheets.<br><br>
+        You can speak or type in <b>Hindi, English, or Hinglish</b>:<br>
+        • "Raju aaj nahi aaya"<br>
+        • "Sunita half day thi Monday ko"<br>
+        • "Geeta ko add karo, 8000 per month"<br>
+        • "Raju ka pay calculate karo"<br>
+        • "Sabka pay batao"
+      </div>
+    </div>
+
+    <div class="key-notice" id="keyNotice">
+      🤖 <strong>Groq key not set.</strong> Tap <strong>⚙ Settings</strong> and add your free Groq API key to enable both chat and voice.
+    </div>
+
+    <div class="mic-area">
+      <button id="micBtn" onclick="toggleMic()">🎤</button>
+      <div class="mic-status" id="micStatus">Tap mic to speak</div>
+      <div class="mic-hint" id="micHint">Speaks Hindi, English & Hinglish</div>
+    </div>
+
+    <div class="chat-input-row">
+      <input type="text" id="userInput" placeholder="Or type here..." />
+      <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <div class="records-panel">
+    <div class="records-header">
+      <h2>Absence Records</h2>
+      <button class="clear-btn" onclick="clearAllData()">Clear all</button>
+    </div>
+    <div class="records-body" id="recordsBody">
+      <div class="empty-state">No records yet.<br>Start by adding your helpers.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Google Apps Script ───────────────────────────────────
+const GAS_CODE = `function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var ss = getOrCreateSheet();
+  if (data.action === 'save') {
+    var ws = ss.getSheetByName('Workers') || ss.insertSheet('Workers');
+    ws.clearContents(); ws.appendRow(['Name','Monthly Salary']);
+    Object.keys(data.workers).forEach(function(n){ws.appendRow([n,data.workers[n].monthlySalary||0]);});
+    var as = ss.getSheetByName('Absences') || ss.insertSheet('Absences');
+    as.clearContents(); as.appendRow(['Worker','Date','Type']);
+    Object.keys(data.workers).forEach(function(n){
+      (data.workers[n].absences||[]).forEach(function(a){as.appendRow([n,a.date,a.type]);});
+    });
+    return out({ok:true});
+  }
+  if (data.action === 'load') {
+    var workers={};
+    var ws=ss.getSheetByName('Workers');
+    if(ws&&ws.getLastRow()>1){ws.getRange(2,1,ws.getLastRow()-1,2).getValues().forEach(function(r){if(r[0])workers[r[0]]={monthlySalary:r[1]||0,absences:[]};});}
+    var as=ss.getSheetByName('Absences');
+    if(as&&as.getLastRow()>1){as.getRange(2,1,as.getLastRow()-1,3).getValues().forEach(function(r){if(r[0]&&workers[r[0]])workers[r[0]].absences.push({date:r[1],type:r[2]});});}
+    return out({ok:true,workers:workers});
+  }
+}
+function getOrCreateSheet(){
+  var p=PropertiesService.getScriptProperties(),id=p.getProperty('SHEET_ID');
+  if(id){try{return SpreadsheetApp.openById(id);}catch(e){}}
+  var ss=SpreadsheetApp.create('Househelp Tracker Data');
+  p.setProperty('SHEET_ID',ss.getId()); return ss;
+}
+function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);}
+function doGet(){return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);}`;
+
+document.getElementById('gasCode').textContent = GAS_CODE;
+function copyGasCode() {
+  navigator.clipboard.writeText(GAS_CODE).then(() => {
+    const b = document.getElementById('copyBtn');
+    b.textContent = '✓ Copied!';
+    setTimeout(() => { b.textContent = '📋 Copy code'; }, 2500);
+  });
+}
+
+// ─── State ───────────────────────────────────────────────
+let workers = JSON.parse(localStorage.getItem('hht_workers') || '{}');
+let chatHistory = [];
+let scriptUrl = localStorage.getItem('hht_script_url') || '';
+let openaiKey = localStorage.getItem('hht_openai_key') || '';
+
+// ─── UI helpers ───────────────────────────────────────────
+function appendMsg(role, html) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  if (role === 'bot') el.innerHTML = '<strong>Assistant</strong>' + html.replace(/\n/g, '<br>');
+  else { el.textContent = html; }
+  document.getElementById('chatMessages').appendChild(el);
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+function showTyping() {
+  const el = document.createElement('div');
+  el.className = 'msg bot'; el.id = 'typingIndicator';
+  el.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  document.getElementById('chatMessages').appendChild(el);
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+function hideTyping() { const e = document.getElementById('typingIndicator'); if(e) e.remove(); }
+
+function renderRecords() {
+  const body = document.getElementById('recordsBody');
+  const keys = Object.keys(workers);
+  if (!keys.length) { body.innerHTML = '<div class="empty-state">No records yet.<br>Start by adding your helpers.</div>'; return; }
+  body.innerHTML = '';
+  keys.forEach(name => {
+    const w = workers[name];
+    const absences = w.absences || [];
+    const items = absences.map(a => `
+      <div class="absence-item">
+        <span>${a.date}</span>
+        <span class="${a.type==='half'?'half-tag':'absent-tag'}">${a.type==='half'?'Half day':'Absent'}</span>
+      </div>`).join('');
+    const card = document.createElement('div');
+    card.className = 'worker-card';
+    card.innerHTML = `<div class="worker-name">${name}</div>
+      <div class="worker-meta">₹${(w.monthlySalary||0).toLocaleString('en-IN')}/month</div>
+      <div class="absence-list">${items||'<span style="font-size:12px;color:#aaa">No absences logged</span>'}</div>`;
+    body.appendChild(card);
+  });
+}
+
+function clearAllData() {
+  if (confirm('Clear all records?')) { workers = {}; saveData(); renderRecords(); appendMsg('bot', 'All records cleared.'); }
+}
+
+// ─── Settings ─────────────────────────────────────────────
+function openModal() {
+  document.getElementById('modalBg').classList.remove('hidden');
+  document.getElementById('scriptUrlInput').value = scriptUrl;
+  document.getElementById('openaiKeyInput').value = openaiKey;
+}
+function closeModal() { document.getElementById('modalBg').classList.add('hidden'); }
+function saveSettings() {
+  const key = document.getElementById('openaiKeyInput').value.trim();
+  const url = document.getElementById('scriptUrlInput').value.trim();
+  if (key) { openaiKey = key; localStorage.setItem('hht_openai_key', key); }
+  if (url && url.startsWith('https://')) { scriptUrl = url; localStorage.setItem('hht_script_url', url); }
+  updateUI();
+  closeModal();
+  appendMsg('bot', '✅ Settings saved! ' + (key ? 'Groq AI enabled (chat + voice). ' : '') + (url ? 'Google Sheets connected.' : ''));
+  if (url && url.startsWith('https://')) loadFromSheets();
+}
+
+function updateUI() {
+  // Sheets status
+  const el = document.getElementById('sheetsStatus');
+  if (scriptUrl) { el.textContent = '✓ Sheets on'; el.className = 'sheets-status connected'; }
+  else { el.textContent = '⚠ Sheets not set'; el.className = 'sheets-status disconnected'; }
+  // Key notice
+  document.getElementById('keyNotice').style.display = openaiKey ? 'none' : 'block';
+  // Mic hint
+  document.getElementById('micHint').textContent = openaiKey
+    ? 'Groq Whisper — Hindi, English & Hinglish ✓ (Free)'
+    : 'Add OpenAI key in ⚙ Settings to enable voice';
+}
+
+// ─── Sheets sync ─────────────────────────────────────────
+function saveData() {
+  localStorage.setItem('hht_workers', JSON.stringify(workers));
+  if (scriptUrl) syncToSheets();
+}
+async function syncToSheets() {
+  try { await fetch(scriptUrl, { method:'POST', body: JSON.stringify({action:'save', workers}), headers:{'Content-Type':'text/plain'} }); }
+  catch(e) { console.warn('Sheets sync failed', e); }
+}
+async function loadFromSheets() {
+  try {
+    const res = await fetch(scriptUrl, { method:'POST', body: JSON.stringify({action:'load'}), headers:{'Content-Type':'text/plain'} });
+    const data = await res.json();
+    if (data.ok && data.workers) { workers = data.workers; localStorage.setItem('hht_workers', JSON.stringify(workers)); renderRecords(); appendMsg('bot', '✅ Data loaded from Google Sheets!'); }
+  } catch(e) { appendMsg('bot', '⚠ Could not connect to Sheets. Check your URL in Settings.'); }
+}
+
+// ─── Claude AI ───────────────────────────────────────────
+async function callAI(userMessage) {
+  if (!openaiKey) {
+    return { reply: 'Please add your Groq API key in ⚙ Settings to enable chat.', action: null, data: {} };
+  }
+
+  const systemPrompt = `You are a friendly househelp absence tracker assistant for an Indian household. You understand Hindi, English, and Hinglish.
+Current worker data: ${JSON.stringify(workers, null, 2)}
+Today: ${new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}
+
+Respond ONLY with raw JSON (no markdown, no code fences):
+{ "reply": "...", "action": null|"add_worker"|"log_absence"|"calculate_pay", "data": {} }
+
+Action data shapes:
+- add_worker: { name, monthlySalary }
+- log_absence: { name, date (e.g. "17 May 2026"), type: "absent"|"half" }
+- calculate_pay: { name } or { name: "all" }
+
+Rules:
+- Understand Hindi: "nahi aaya" = absent, "aadha din" or "half day" = half, "add karo" = add worker, "kitna dena hai" or "pay batao" = calculate pay
+- If someone says hello/namaste, greet them warmly and explain what you can do
+- If a name is not in worker data, ask to add them first with their monthly salary
+- For casual chat (hello, how are you etc), just reply naturally in the reply field with action: null
+- Use rupee symbol for amounts. Be warm and brief. Mention date when logging.
+- Reply in the same language the user spoke (Hindi/English/Hinglish)`;
+
+  chatHistory.push({ role: 'user', content: userMessage });
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + openaiKey
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 1000,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...chatHistory
+      ],
+      temperature: 0.3
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const rawText = data.choices?.[0]?.message?.content || '{}';
+  let parsed;
+  try { parsed = JSON.parse(rawText.replace(/```json|```/g,'').trim()); }
+  catch { parsed = { reply: rawText, action: null }; }
+  chatHistory.push({ role: 'assistant', content: rawText });
+  return parsed;
+}
+
+// ─── Action handler ───────────────────────────────────────
+function handleAction(parsed) {
+  const { action, data } = parsed;
+  if (action === 'add_worker' && data?.name) {
+    const n = data.name.trim();
+    if (!workers[n]) workers[n] = { monthlySalary: data.monthlySalary||0, absences: [] };
+    else workers[n].monthlySalary = data.monthlySalary || workers[n].monthlySalary;
+    saveData(); renderRecords();
+  }
+  if (action === 'log_absence' && data?.name) {
+    const n = data.name.trim();
+    if (workers[n]) {
+      const abs = workers[n].absences || [];
+      if (!abs.find(a => a.date === data.date)) {
+        abs.push({ date: data.date, type: data.type||'absent' });
+        workers[n].absences = abs; saveData(); renderRecords();
+      }
+    }
+  }
+  if (action === 'calculate_pay') {
+    const names = data?.name === 'all' ? Object.keys(workers) : [data?.name];
+    let extra = '\n\n';
+    names.forEach(name => {
+      const w = workers[name]; if(!w) return;
+      const sal = w.monthlySalary||0, rate = sal/26;
+      const half = (w.absences||[]).filter(a=>a.type==='half').length;
+      const full = (w.absences||[]).filter(a=>a.type==='absent').length;
+      const ded = (full*rate) + (half*rate/2);
+      extra += `📋 ${name}\n  Salary: ₹${sal.toLocaleString('en-IN')}\n  Full absent: ${full} day(s)\n  Half days: ${half} day(s)\n  Deduction: ₹${Math.round(ded).toLocaleString('en-IN')}\n  ✅ Pay: ₹${Math.round(sal-ded).toLocaleString('en-IN')}\n\n`;
+    });
+    return extra;
+  }
+  return '';
+}
+
+// ─── Send message ─────────────────────────────────────────
+async function sendMessage(text) {
+  const input = document.getElementById('userInput');
+  const btn = document.getElementById('sendBtn');
+  // If called with a direct text argument (from voice), use it; otherwise read input field
+  const msg = (typeof text === 'string' && text.trim()) ? text.trim() : input.value.trim();
+  if (!msg) return;
+  appendMsg('user', msg);
+  input.value = '';
+  btn.disabled = true;
+  showTyping();
+  try {
+    const parsed = await callAI(msg);
+    hideTyping();
+    appendMsg('bot', (parsed.reply || 'Done!') + handleAction(parsed));
+  } catch(err) {
+    hideTyping();
+    appendMsg('bot', 'Sorry, something went wrong. Please try again.');
+    console.error(err);
+  }
+  btn.disabled = false;
+}
+document.getElementById('userInput').addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
+
+// ─── Whisper Voice Input ───────────────────────────────────
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+function setMicState(state) {
+  const btn = document.getElementById('micBtn');
+  const status = document.getElementById('micStatus');
+  btn.className = '';
+  if (state === 'idle') {
+    btn.textContent = '🎤'; status.textContent = 'Tap mic to speak';
+  } else if (state === 'listening') {
+    btn.classList.add('listening'); btn.textContent = '⏹'; status.textContent = '🔴 Recording... tap to stop';
+  } else if (state === 'processing') {
+    btn.classList.add('processing'); btn.textContent = '⏳'; status.textContent = 'Converting speech...';
+    btn.disabled = true;
+  }
+}
+
+async function toggleMic() {
+  if (!openaiKey) {
+    document.getElementById('keyNotice').style.display = 'block';
+    appendMsg('bot', '⚙️ Please tap <strong>⚙ Settings</strong> and add your OpenAI API key first to enable voice input.');
+    return;
+  }
+
+  if (isRecording) {
+    isRecording = false;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    return;
+  }
+
+  // Diagnose environment first
+  const diagLines = [];
+  diagLines.push('Protocol: ' + location.protocol);
+  diagLines.push('MediaDevices: ' + (!!navigator.mediaDevices));
+  diagLines.push('getUserMedia: ' + (!!navigator.mediaDevices?.getUserMedia));
+  diagLines.push('MediaRecorder: ' + (typeof MediaRecorder !== 'undefined'));
+  console.log('Mic diagnostics:', diagLines.join(' | '));
+
+  // Check if we're on HTTP (not HTTPS) — mic never works
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    appendMsg('bot', '🚫 <strong>Mic needs HTTPS.</strong> Make sure you opened the Netlify link (https://...) in Chrome, not a local file.');
+    setMicState('idle');
+    return;
+  }
+
+  // Check MediaDevices API availability
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    appendMsg('bot', '🚫 Your browser does not support microphone access. Please use <strong>Chrome</strong> (not Samsung Browser, Firefox, or UC Browser).');
+    setMicState('idle');
+    return;
+  }
+
+  try {
+    setMicState('listening');
+    document.getElementById('micStatus').textContent = 'Requesting mic access...';
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    audioChunks = [];
+
+    document.getElementById('micStatus').textContent = '🔴 Recording... tap ⏹ to stop';
+
+    // Pick best supported MIME type for this device
+    let mimeType = '';
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+      'audio/mpeg',
+      ''
+    ];
+    for (const t of types) {
+      if (t === '' || MediaRecorder.isTypeSupported(t)) { mimeType = t; break; }
+    }
+    console.log('Using mimeType:', mimeType || '(browser default)');
+
+    const options = mimeType ? { mimeType } : {};
+    mediaRecorder = new MediaRecorder(stream, options);
+    const actualMime = mediaRecorder.mimeType || mimeType;
+    console.log('Actual mimeType:', actualMime);
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onerror = e => {
+      console.error('MediaRecorder error:', e);
+      appendMsg('bot', '🚫 Recording error: ' + (e.error?.message || 'unknown'));
+      stream.getTracks().forEach(t => t.stop());
+      isRecording = false;
+      setMicState('idle');
+      document.getElementById('micBtn').disabled = false;
+    };
+
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      setMicState('processing');
+      document.getElementById('micBtn').disabled = true;
+
+      console.log('Audio chunks:', audioChunks.length, 'Mime:', actualMime);
+
+      if (audioChunks.length === 0) {
+        appendMsg('bot', '⚠ No audio recorded. Please try again and speak clearly.');
+        setMicState('idle');
+        document.getElementById('micBtn').disabled = false;
+        return;
+      }
+
+      const blob = new Blob(audioChunks, { type: actualMime || 'audio/webm' });
+      console.log('Blob size:', blob.size, 'type:', blob.type);
+
+      if (blob.size < 500) {
+        document.getElementById('micStatus').textContent = 'Too short — hold mic and speak, then tap again to stop';
+        setMicState('idle');
+        document.getElementById('micBtn').disabled = false;
+        return;
+      }
+
+      // Determine file extension for Whisper
+      let ext = 'webm';
+      if (actualMime.includes('mp4')) ext = 'mp4';
+      else if (actualMime.includes('ogg')) ext = 'ogg';
+      else if (actualMime.includes('mpeg')) ext = 'mp3';
+
+      try {
+        document.getElementById('micStatus').textContent = 'Sending to Whisper AI...';
+        const formData = new FormData();
+        formData.append('file', blob, 'recording.' + ext);
+        formData.append('model', 'whisper-large-v3-turbo');
+        formData.append('language', 'hi');
+        formData.append('prompt', 'Househelp tracker. Absent, half day, salary, pay. Nahi aaya, aadha din, kitna dena hai.');
+
+        const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + openaiKey },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error('Whisper HTTP error:', res.status, errText);
+          throw new Error('Whisper error ' + res.status + ': ' + errText.substring(0, 100));
+        }
+
+        const result = await res.json();
+        console.log('Whisper result:', result);
+
+        if (result.error) throw new Error(result.error.message);
+
+        const transcript = result.text?.trim();
+        if (transcript) {
+          document.getElementById('micStatus').textContent = 'Heard: "' + transcript.substring(0, 50) + (transcript.length > 50 ? '...' : '') + '"';
+          setMicState('idle');
+          document.getElementById('micBtn').disabled = false;
+          await sendMessage(transcript);
+        } else {
+          document.getElementById('micStatus').textContent = 'Could not hear clearly. Please speak louder and try again.';
+          setMicState('idle');
+          document.getElementById('micBtn').disabled = false;
+        }
+      } catch(err) {
+        console.error('Whisper error:', err);
+        appendMsg('bot', '⚠ Voice error: ' + err.message + '<br>Please check your OpenAI key in ⚙ Settings.');
+        setMicState('idle');
+        document.getElementById('micBtn').disabled = false;
+      }
+    };
+
+    mediaRecorder.start(100); // collect data every 100ms for reliability
+    isRecording = true;
+
+  } catch(err) {
+    console.error('Mic access error:', err.name, err.message);
+    isRecording = false;
+    setMicState('idle');
+    document.getElementById('micBtn').disabled = false;
+
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      appendMsg('bot', '🚫 <strong>Mic permission denied.</strong><br><br>To fix:<br>1. Tap the 🔒 icon in Chrome address bar<br>2. Tap Site settings → Microphone → Allow<br>3. Reload the page and try again');
+    } else if (err.name === 'NotFoundError') {
+      appendMsg('bot', '🚫 No microphone found on this device.');
+    } else if (err.name === 'NotSupportedError') {
+      appendMsg('bot', '🚫 Microphone not supported on this browser. Please use Chrome.');
+    } else {
+      appendMsg('bot', '🚫 Mic error: <strong>' + err.name + '</strong> — ' + err.message);
+    }
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────
+updateUI();
+renderRecords();
+if (scriptUrl) setTimeout(() => { appendMsg('bot','🔄 Loading data from Google Sheets...'); loadFromSheets(); }, 900);
+</script>
+</body>
+</html>
