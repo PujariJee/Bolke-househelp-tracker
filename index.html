@@ -329,38 +329,6 @@
 </head>
 <body>
 
-<!-- Settings Modal (Supabase only — Groq key lives in Vercel env vars) -->
-<div class="modal-bg hidden" id="modalBg">
-  <div class="modal">
-    <div class="modal-title">⚙️ Database Setup</div>
-    <div class="modal-subtitle">Connect to your Supabase database</div>
-
-    <div>
-      <div class="section-label">🗄️ Supabase — PostgreSQL (Free)</div>
-      <p>Run this SQL once in your Supabase project to create the required tables.</p>
-      <ol>
-        <li>Go to <strong>supabase.com</strong> → New project</li>
-        <li>Open <em>SQL Editor</em> → paste the SQL below → click Run</li>
-        <li>Go to <em>Settings → API</em> → copy Project URL and anon key</li>
-      </ol>
-      <div class="code-block" id="sqlSetup"></div>
-      <button class="copy-btn" id="copySqlBtn">📋 Copy SQL</button>
-      <label class="field-label">Supabase Project URL</label>
-      <input type="url" id="supaUrlInput" placeholder="https://xxxx.supabase.co" />
-      <label class="field-label">Supabase Anon Key</label>
-      <input type="password" id="supaKeyInput" placeholder="eyJh..." />
-    </div>
-
-    <div class="modal-btns">
-      <button class="btn btn-danger" onclick="logOut()">Log out</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Header -->
 <header>
   <div class="header-left">
@@ -375,7 +343,6 @@
       <div class="dot"></div>
       <span id="dbStatusText">...</span>
     </div>
-    <button class="settings-btn" id="settingsBtn" onclick="openModal()" title="Database settings" style="display:none">⚙️</button>
   </div>
 </header>
 
@@ -426,39 +393,6 @@
 </div>
 
 <script>
-// ─── Setup SQL ────────────────────────────────────────────────────────────────
-const SETUP_SQL =
-`CREATE TABLE IF NOT EXISTS workers (
-  id             UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name           TEXT UNIQUE NOT NULL,
-  monthly_salary INTEGER DEFAULT 0,
-  created_at     TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS absences (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  worker_id  UUID REFERENCES workers(id) ON DELETE CASCADE,
-  date       TEXT NOT NULL,
-  type       TEXT CHECK (type IN ('absent','half')) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(worker_id, date)
-);
-
-ALTER TABLE workers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE absences ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "allow all" ON workers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow all" ON absences FOR ALL USING (true) WITH CHECK (true);`;
-
-document.getElementById('sqlSetup').textContent = SETUP_SQL;
-document.getElementById('copySqlBtn').onclick = () => {
-  navigator.clipboard.writeText(SETUP_SQL).then(() => {
-    const b = document.getElementById('copySqlBtn');
-    b.textContent = '✓ Copied!';
-    setTimeout(() => { b.textContent = '📋 Copy SQL'; }, 2500);
-  });
-};
-
 // ─── Demo data ────────────────────────────────────────────────────────────────
 const DEMO_WORKERS = {
   'Raju': {
@@ -503,16 +437,6 @@ function initAuth() {
   }
   authToken    = localStorage.getItem('bolke_token') || '';
   isAuthorized = !!authToken;
-}
-
-function logOut() {
-  if (!confirm('Remove authorization from this device?')) return;
-  localStorage.removeItem('bolke_token');
-  authToken = ''; isAuthorized = false;
-  closeModal(); updateUI();
-  workers = JSON.parse(JSON.stringify(DEMO_WORKERS));
-  renderRecords();
-  appendMsg('bot', 'Logged out. Showing demo mode.', false);
 }
 
 // ─── TTS (Web Speech API) ─────────────────────────────────────────────────────
@@ -682,43 +606,21 @@ function clearAllData() {
   workers = {}; persist(); renderRecords(); appendMsg('bot', 'All records cleared.', false);
 }
 
-// ─── Settings ─────────────────────────────────────────────────────────────────
-function openModal() {
-  document.getElementById('modalBg').classList.remove('hidden');
-  document.getElementById('supaUrlInput').value = supaUrl;
-  document.getElementById('supaKeyInput').value = supaKey;
-}
-function closeModal() { document.getElementById('modalBg').classList.add('hidden'); }
-
-function saveSettings() {
-  const su = document.getElementById('supaUrlInput').value.trim();
-  const sk = document.getElementById('supaKeyInput').value.trim();
-  if (su) { supaUrl = su; localStorage.setItem('bolke_supa_url', su); }
-  if (sk) { supaKey = sk; localStorage.setItem('bolke_supa_key', sk); }
-  initSupa(); updateUI(); closeModal();
-  appendMsg('bot', su && sk ? '✅ Supabase connected! Loading data...' : '⚙️ Settings saved.', false);
-  if (supa) loadFromSupa();
-}
-
 // ─── updateUI ─────────────────────────────────────────────────────────────────
 function updateUI() {
   const pill    = document.getElementById('dbStatus');
   const pillTxt = document.getElementById('dbStatusText');
-  const settBtn = document.getElementById('settingsBtn');
   const banner  = document.getElementById('demoBanner');
   const clearBtn = document.getElementById('clearBtn');
 
   updateTTSBtn();
 
   if (!isAuthorized) {
-    // ── Demo mode ──
     pill.className = 'status-pill demo-mode';
     pillTxt.textContent = 'Portfolio demo';
-    if (settBtn) settBtn.style.display = 'none';
-    if (banner)  banner.classList.remove('hidden');
+    if (banner)   banner.classList.remove('hidden');
     if (clearBtn) clearBtn.style.display = 'none';
     document.getElementById('micHint').textContent = 'Groq Whisper · Hindi, English & Hinglish';
-    // Load demo data if no real data
     if (!Object.keys(workers).length) {
       workers = JSON.parse(JSON.stringify(DEMO_WORKERS));
     }
@@ -726,9 +628,7 @@ function updateUI() {
     return;
   }
 
-  // ── Authorized mode ──
-  if (banner)  banner.classList.add('hidden');
-  if (settBtn) settBtn.style.display = '';
+  if (banner)   banner.classList.add('hidden');
   if (clearBtn) clearBtn.style.display = '';
   document.getElementById('micHint').textContent = 'Groq Whisper · Hindi, English & Hinglish ✓';
 
@@ -738,7 +638,6 @@ function updateUI() {
   } else {
     pill.className = 'status-pill disconnected';
     pillTxt.textContent = 'DB not connected';
-    pill.onclick = openModal;
   }
 }
 
