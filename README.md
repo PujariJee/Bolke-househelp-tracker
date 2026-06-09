@@ -1,4 +1,4 @@
-# 🏠 Househelp Tracker
+# Househelp Tracker
 
 > **A voice-first, AI-powered conversational assistant for domestic workforce attendance and payroll management — built for real-world use in Indian households.**
 
@@ -23,11 +23,11 @@ Existing solutions — spreadsheets, attendance apps — assume digital literacy
 
 Househelp Tracker is a voice-first AI assistant that a non-technical user can speak to naturally — in **Hindi, English, or Hinglish** — to:
 
-- 📝 Log when a worker was absent or came half-day
-- ➕ Add new workers with their monthly salary
-- 💰 Calculate exact pay at the end of the month with deduction breakdowns
-- 🔊 Hear all responses spoken back in Hindi
-- ☁️ Have all data automatically saved to Google Sheets — permanently, across devices
+-  Log when a worker was absent or came half-day
+-  Add new workers with their monthly salary
+-  Calculate exact pay at the end of the month with deduction breakdowns
+-  Hear all responses spoken back in Hindi
+-  Have all data automatically saved to Google Sheets — permanently, across devices
 
 No forms. No spreadsheets. No app to install. Just speak.
 
