@@ -1,6 +1,8 @@
-# Househelp Tracker
+# Bolke — Voice AI for Home
 
 > **A voice-first, AI-powered conversational assistant for domestic workforce attendance and payroll management — built for real-world use in Indian households.**
+
+**🔗 [Live Demo](https://bolke-househelp-tracker.vercel.app)** — try the voice input, no sign-up needed
 
 ![Status](https://img.shields.io/badge/status-live-brightgreen)
 ![Cost](https://img.shields.io/badge/running%20cost-₹0%2Fmonth-blue)
@@ -21,13 +23,15 @@ Existing solutions — spreadsheets, attendance apps — assume digital literacy
 
 ## What It Does
 
-Househelp Tracker is a voice-first AI assistant that a non-technical user can speak to naturally — in **Hindi, English, or Hinglish** — to:
+Bolke is a voice-first AI assistant that a non-technical user can speak to naturally — in **Hindi, English, or Hinglish** — to:
 
--  Log when a worker was absent or came half-day
--  Add new workers with their monthly salary
--  Calculate exact pay at the end of the month with deduction breakdowns
--  Hear all responses spoken back in Hindi
--  Have all data automatically saved to Google Sheets — permanently, across devices
+- 📝 Log when a worker was absent or came half-day
+- ➕ Add new workers with their monthly salary
+- 💰 Calculate exact pay at the end of the month with deduction breakdowns
+- 🔊 Hear all responses spoken back in Hindi (Web Speech API)
+- ☁️ Have all data automatically saved to Supabase PostgreSQL — permanently, across devices
+
+**Portfolio visitors** get a full demo experience — voice input works, TTS speaks back, sample data shown. Database writes are restricted to the household owner via token auth.
 
 No forms. No spreadsheets. No app to install. Just speak.
 
