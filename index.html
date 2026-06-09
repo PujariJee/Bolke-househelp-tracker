@@ -485,8 +485,8 @@ const DEMO_WORKERS = {
 // ─── State ────────────────────────────────────────────────────────────────────
 let workers     = JSON.parse(localStorage.getItem('bolke_workers') || '{}');
 let chatHistory = [];
-let supaUrl     = localStorage.getItem('bolke_supa_url') || '';
-let supaKey     = localStorage.getItem('bolke_supa_key') || '';
+let supaUrl     = localStorage.getItem('bolke_supa_url') || 'https://qmbjhfiyddsesrbignyy.supabase.co';
+let supaKey     = localStorage.getItem('bolke_supa_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtYmpoZml5ZGRzZXNyYmlnbnl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDg2NTYsImV4cCI6MjA5NjU4NDY1Nn0.ca5JxpWMqCdRGnsr27L7KSuLxqjZIov8x844M5MOvHI';
 let supa        = null;
 let authToken   = '';
 let isAuthorized = false;
