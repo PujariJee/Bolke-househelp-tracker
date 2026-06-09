@@ -76,6 +76,8 @@
   .status-pill.connected .dot { background: var(--success); }
   .status-pill.disconnected { background: #FEF9C3; color: #713F12; cursor: pointer; }
   .status-pill.disconnected .dot { background: var(--warning); animation: blink 2s infinite; }
+  .status-pill.demo-mode { background: var(--primary-light); color: #3730A3; cursor: default; }
+  .status-pill.demo-mode .dot { background: var(--primary); }
 
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
 
@@ -86,6 +88,18 @@
     font-size: 15px; transition: background .15s;
   }
   .settings-btn:hover { background: var(--border); }
+
+  /* ── DEMO BANNER ─────────────────────────────────────────────────────── */
+  .demo-banner {
+    background: linear-gradient(135deg, var(--primary-light) 0%, #F0F9FF 100%);
+    border-bottom: 1px solid #C7D2FE;
+    padding: 9px 16px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #3730A3; line-height: 1.5;
+    flex-shrink: 0;
+  }
+  .demo-banner strong { font-weight: 700; }
+  .demo-banner.hidden { display: none; }
 
   /* ── LAYOUT ──────────────────────────────────────────────────────────── */
   .main { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 61px); }
@@ -132,22 +146,21 @@
   .typing-bubble span:nth-child(3) { animation-delay: .4s; }
   @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
 
-  /* ── KEY NOTICE ──────────────────────────────────────────────────────── */
-  .key-notice {
-    margin: 0 16px 8px;
-    background: var(--primary-light); border: 1px solid #C7D2FE;
-    border-radius: var(--radius-sm); padding: 10px 14px;
-    font-size: 12px; color: #3730A3; display: none; line-height: 1.6;
-  }
-
   /* ── MIC SECTION ─────────────────────────────────────────────────────── */
   .mic-section {
     padding: 14px 16px 10px;
     display: flex; flex-direction: column; align-items: center; gap: 8px;
-    background: var(--surface); border-top: 1px solid var(--border);
+    background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0;
   }
 
   .mic-status-text { font-size: 12px; font-weight: 500; color: var(--text-muted); min-height: 18px; text-align: center; }
+
+  /* mic + TTS side-by-side, mic stays centered */
+  .mic-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; width: 100%; position: relative;
+  }
+  .mic-row-spacer { width: 44px; flex-shrink: 0; } /* balances the TTS button */
 
   #micBtn {
     width: 64px; height: 64px; border-radius: 50%;
@@ -155,11 +168,11 @@
     font-size: 26px; display: flex; align-items: center; justify-content: center;
     cursor: pointer; box-shadow: 0 4px 16px rgba(99,102,241,.4);
     transition: all .15s; touch-action: none; user-select: none;
+    flex-shrink: 0;
   }
   #micBtn:hover { box-shadow: 0 6px 20px rgba(99,102,241,.5); transform: translateY(-1px); }
   #micBtn:active { transform: scale(.93); }
   #micBtn:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
-
   #micBtn.listening {
     background: var(--danger); box-shadow: 0 4px 16px rgba(239,68,68,.45);
     animation: pulseGlow 1.2s ease-in-out infinite;
@@ -167,16 +180,26 @@
   #micBtn.processing {
     background: var(--warning); box-shadow: 0 4px 16px rgba(245,158,11,.4); animation: none;
   }
-
   @keyframes pulseGlow {
     0%,100% { box-shadow: 0 4px 16px rgba(239,68,68,.45); transform: scale(1); }
     50%      { box-shadow: 0 4px 28px rgba(239,68,68,.7); transform: scale(1.06); }
   }
 
+  /* TTS toggle button */
+  #ttsBtn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--bg); border: 1.5px solid var(--border);
+    cursor: pointer; font-size: 19px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s; flex-shrink: 0; user-select: none;
+  }
+  #ttsBtn:hover { background: var(--primary-light); border-color: var(--primary); }
+  #ttsBtn.tts-active { background: var(--primary-light); border-color: var(--primary); }
+
   .mic-hint { font-size: 11px; color: var(--text-subtle); text-align: center; }
 
   /* ── INPUT ROW ───────────────────────────────────────────────────────── */
-  .input-row { display: flex; gap: 8px; padding: 0 16px 16px; align-items: center; }
+  .input-row { display: flex; gap: 8px; padding: 0 16px 16px; align-items: center; flex-shrink: 0; }
 
   .input-row input {
     flex: 1; border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -237,6 +260,12 @@
   .net-pay-label  { font-size: 11px; color: var(--text-muted); font-weight: 500; }
   .net-pay-amount { font-size: 13px; font-weight: 700; color: var(--success); }
 
+  .demo-badge {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+    background: var(--primary-light); color: var(--primary); padding: 1px 6px; border-radius: 99px;
+    margin-left: 6px; vertical-align: middle;
+  }
+
   .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 16px; gap: 10px; color: var(--text-subtle); }
   .empty-icon { font-size: 30px; }
   .empty-state p { font-size: 13px; text-align: center; line-height: 1.6; }
@@ -255,8 +284,6 @@
 
   .modal-title    { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
   .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
-
-  .modal-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
 
   .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); margin-bottom: 10px; }
 
@@ -284,12 +311,14 @@
   .copy-btn { font-size: 11px; font-family: inherit; font-weight: 600; background: var(--primary-light); color: var(--primary); border: none; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; margin-bottom: 12px; }
   .copy-btn:hover { background: #C7D2FE; }
 
-  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .modal-btns { display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
   .btn { border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-size: 13px; font-family: inherit; font-weight: 600; cursor: pointer; transition: background .15s; }
   .btn-secondary { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
   .btn-secondary:hover { background: var(--border); }
   .btn-primary { background: var(--primary); color: #fff; }
   .btn-primary:hover { background: var(--primary-dark); }
+  .btn-danger { background: none; color: var(--danger); font-size: 12px; padding: 6px 0; font-weight: 500; }
+  .btn-danger:hover { text-decoration: underline; }
 
   /* ── RESPONSIVE ──────────────────────────────────────────────────────── */
   @media (max-width: 640px) {
@@ -300,27 +329,15 @@
 </head>
 <body>
 
-<!-- Settings Modal -->
+<!-- Settings Modal (Supabase only — Groq key lives in Vercel env vars) -->
 <div class="modal-bg hidden" id="modalBg">
   <div class="modal">
-    <div class="modal-title">⚙️ Settings</div>
-    <div class="modal-subtitle">Configure your API keys and database</div>
+    <div class="modal-title">⚙️ Database Setup</div>
+    <div class="modal-subtitle">Connect to your Supabase database</div>
 
-    <div style="margin-top:0;padding-top:0;border-top:none">
-      <div class="section-label">🤖 Voice + Chat — Groq (Free)</div>
-      <p>One Groq key powers both voice input (Whisper) and AI chat (LLaMA 3.3). Completely free.</p>
-      <ol>
-        <li>Go to <strong>console.groq.com</strong> → sign up free</li>
-        <li>Click <em>API Keys</em> → <em>Create API Key</em></li>
-        <li>Copy and paste it below</li>
-      </ol>
-      <label class="field-label">Groq API Key</label>
-      <input type="password" id="groqKeyInput" placeholder="gsk_..." />
-    </div>
-
-    <div class="modal-section">
-      <div class="section-label">🗄️ Database — Supabase (Free)</div>
-      <p>Your data lives in a real PostgreSQL database. Run this SQL once in Supabase to set it up.</p>
+    <div>
+      <div class="section-label">🗄️ Supabase — PostgreSQL (Free)</div>
+      <p>Run this SQL once in your Supabase project to create the required tables.</p>
       <ol>
         <li>Go to <strong>supabase.com</strong> → New project</li>
         <li>Open <em>SQL Editor</em> → paste the SQL below → click Run</li>
@@ -335,8 +352,11 @@
     </div>
 
     <div class="modal-btns">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+      <button class="btn btn-danger" onclick="logOut()">Log out</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+      </div>
     </div>
   </div>
 </div>
@@ -351,31 +371,35 @@
     </div>
   </div>
   <div class="header-right">
-    <div class="status-pill disconnected" id="dbStatus" onclick="openModal()">
+    <div class="status-pill" id="dbStatus">
       <div class="dot"></div>
-      <span id="dbStatusText">DB not connected</span>
+      <span id="dbStatusText">...</span>
     </div>
-    <button class="settings-btn" onclick="openModal()" title="Settings">⚙️</button>
+    <button class="settings-btn" id="settingsBtn" onclick="openModal()" title="Database settings" style="display:none">⚙️</button>
   </div>
 </header>
 
 <div class="main">
   <div class="chat-panel">
-    <div class="chat-messages" id="chatMessages">
-      <div class="msg bot">
-        <div class="msg-label">Bolke</div>
-        <div class="msg-bubble">Namaste! 🙏 Main aapka ghar ka sahayak hoon.<br><br>Tap <strong>⚙️ Settings</strong> to add your Groq key and connect Supabase.<br><br>Then speak or type in <strong>Hindi, English, or Hinglish</strong>:<br>• "Raju aaj nahi aaya"<br>• "Sunita half day thi kal"<br>• "Geeta ko add karo — ₹8,000/month"<br>• "Sabka pay batao"</div>
-      </div>
+
+    <!-- Demo mode banner — hidden for authorized users -->
+    <div class="demo-banner" id="demoBanner">
+      <span>👁️</span>
+      <span><strong>Portfolio demo</strong> — read-only view. Voice input fully works — tap the mic and speak!</span>
     </div>
 
-    <div class="key-notice" id="keyNotice">
-      🔑 Add your <strong>Groq API key</strong> in ⚙️ Settings to enable chat and voice.
+    <div class="chat-messages" id="chatMessages">
+      <!-- welcome message injected by JS based on auth state -->
     </div>
 
     <div class="mic-section">
       <div class="mic-status-text" id="micStatus">Tap mic to speak</div>
-      <button id="micBtn" onclick="toggleMic()">🎤</button>
-      <div class="mic-hint" id="micHint">Groq Whisper — Hindi, English &amp; Hinglish</div>
+      <div class="mic-row">
+        <div class="mic-row-spacer"></div>
+        <button id="micBtn" onclick="toggleMic()">🎤</button>
+        <button id="ttsBtn" onclick="toggleTTS()" title="Voice replies ON">🔊</button>
+      </div>
+      <div class="mic-hint" id="micHint">Groq Whisper · Hindi, English &amp; Hinglish</div>
     </div>
 
     <div class="input-row">
@@ -390,12 +414,12 @@
         <h2>Workers</h2>
         <div class="rec-count" id="workerCount">0 workers</div>
       </div>
-      <button class="clear-link" onclick="clearAllData()">Clear all</button>
+      <button class="clear-link" id="clearBtn" onclick="clearAllData()" style="display:none">Clear all</button>
     </div>
     <div class="records-body" id="recordsBody">
       <div class="empty-state">
         <div class="empty-icon">👷</div>
-        <p>No workers yet.<br>Add one by speaking or typing.</p>
+        <p>Loading...</p>
       </div>
     </div>
   </div>
@@ -435,13 +459,102 @@ document.getElementById('copySqlBtn').onclick = () => {
   });
 };
 
+// ─── Demo data ────────────────────────────────────────────────────────────────
+const DEMO_WORKERS = {
+  'Raju': {
+    monthlySalary: 8000,
+    absences: [
+      { date: '3 Jun 2026', type: 'absent' },
+      { date: '10 Jun 2026', type: 'absent' },
+      { date: '15 Jun 2026', type: 'half' }
+    ]
+  },
+  'Sunita': {
+    monthlySalary: 7500,
+    absences: [
+      { date: '5 Jun 2026', type: 'half' },
+      { date: '12 Jun 2026', type: 'absent' }
+    ]
+  },
+  'Geeta': {
+    monthlySalary: 9000,
+    absences: []
+  }
+};
+
 // ─── State ────────────────────────────────────────────────────────────────────
 let workers     = JSON.parse(localStorage.getItem('bolke_workers') || '{}');
 let chatHistory = [];
-let groqKey     = localStorage.getItem('bolke_groq_key')  || '';
-let supaUrl     = localStorage.getItem('bolke_supa_url')  || '';
-let supaKey     = localStorage.getItem('bolke_supa_key')  || '';
+let supaUrl     = localStorage.getItem('bolke_supa_url') || '';
+let supaKey     = localStorage.getItem('bolke_supa_key') || '';
 let supa        = null;
+let authToken   = '';
+let isAuthorized = false;
+let ttsEnabled  = localStorage.getItem('bolke_tts') !== 'false'; // default ON
+let voices      = [];
+
+// ─── Auth / Token ─────────────────────────────────────────────────────────────
+function initAuth() {
+  const urlToken = new URLSearchParams(window.location.search).get('token');
+  if (urlToken) {
+    localStorage.setItem('bolke_token', urlToken);
+    // Clean the token from the URL so it's not visible in browser history
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+  authToken    = localStorage.getItem('bolke_token') || '';
+  isAuthorized = !!authToken;
+}
+
+function logOut() {
+  if (!confirm('Remove authorization from this device?')) return;
+  localStorage.removeItem('bolke_token');
+  authToken = ''; isAuthorized = false;
+  closeModal(); updateUI();
+  workers = JSON.parse(JSON.stringify(DEMO_WORKERS));
+  renderRecords();
+  appendMsg('bot', 'Logged out. Showing demo mode.', false);
+}
+
+// ─── TTS (Web Speech API) ─────────────────────────────────────────────────────
+if (window.speechSynthesis) {
+  voices = speechSynthesis.getVoices();
+  speechSynthesis.addEventListener('voiceschanged', () => { voices = speechSynthesis.getVoices(); });
+}
+
+function speak(text) {
+  if (!ttsEnabled || !window.speechSynthesis) return;
+  // Strip emoji and markdown before speaking
+  const clean = text
+    .replace(/[\u{1F300}-\u{1FFFF}]/gu, '')  // emoji block
+    .replace(/[⚙️✅⚠🚫🔑🔄📋👷🏠👁]/g, '')
+    .replace(/\*\*/g, '').replace(/\*/g, '')
+    .replace(/\n+/g, '. ')
+    .trim();
+  if (!clean) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'hi-IN';
+  utt.rate = 0.88;
+  utt.pitch = 1.0;
+  const hindiVoice = voices.find(v => v.lang === 'hi-IN' || v.lang.startsWith('hi'));
+  if (hindiVoice) utt.voice = hindiVoice;
+  speechSynthesis.speak(utt);
+}
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  localStorage.setItem('bolke_tts', ttsEnabled);
+  updateTTSBtn();
+  if (!ttsEnabled && window.speechSynthesis) speechSynthesis.cancel();
+}
+
+function updateTTSBtn() {
+  const btn = document.getElementById('ttsBtn');
+  if (!btn) return;
+  btn.textContent = ttsEnabled ? '🔊' : '🔇';
+  btn.title = ttsEnabled ? 'Voice replies ON — tap to mute' : 'Voice replies OFF — tap to unmute';
+  btn.classList.toggle('tts-active', ttsEnabled);
+}
 
 // ─── Supabase ─────────────────────────────────────────────────────────────────
 function initSupa() {
@@ -458,19 +571,17 @@ async function loadFromSupa() {
       supa.from('absences').select('*')
     ]);
     if (wErr || aErr) throw wErr || aErr;
-
     workers = {};
     wRows.forEach(w => { workers[w.name] = { _id: w.id, monthlySalary: w.monthly_salary, absences: [] }; });
     aRows.forEach(a => {
       const w = Object.values(workers).find(x => x._id === a.worker_id);
       if (w) w.absences.push({ date: a.date, type: a.type });
     });
-
     localStorage.setItem('bolke_workers', JSON.stringify(workers));
     renderRecords();
-    appendMsg('bot', '✅ Data loaded from Supabase.');
+    appendMsg('bot', '✅ Data loaded from Supabase.', false);
   } catch(e) {
-    appendMsg('bot', '⚠ Could not load from Supabase. Check your URL and key in ⚙️ Settings.\n' + e.message);
+    appendMsg('bot', '⚠ Could not load from Supabase. Check your URL and key in ⚙️ Settings.\n' + e.message, false);
   }
 }
 
@@ -495,7 +606,8 @@ async function saveAbsenceSupa(workerId, date, type) {
 function persist() { localStorage.setItem('bolke_workers', JSON.stringify(workers)); }
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
-function appendMsg(role, html) {
+// autoSpeak: false for system messages, true (default) for actual conversation
+function appendMsg(role, html, autoSpeak = true) {
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + role;
   if (role === 'bot') {
@@ -509,6 +621,7 @@ function appendMsg(role, html) {
   wrap.appendChild(bub);
   document.getElementById('chatMessages').appendChild(wrap);
   wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  if (role === 'bot' && autoSpeak) speak(html);
 }
 
 function showTyping() {
@@ -533,8 +646,9 @@ function calcNetPay(w) {
 function renderRecords() {
   const body = document.getElementById('recordsBody');
   const keys = Object.keys(workers);
-  document.getElementById('workerCount').textContent =
-    keys.length ? `${keys.length} worker${keys.length > 1 ? 's' : ''}` : '0 workers';
+  const demoSuffix = !isAuthorized ? ' <span class="demo-badge">demo</span>' : '';
+  document.getElementById('workerCount').innerHTML =
+    (keys.length ? `${keys.length} worker${keys.length > 1 ? 's' : ''}` : '0 workers') + demoSuffix;
 
   if (!keys.length) {
     body.innerHTML = `<div class="empty-state"><div class="empty-icon">👷</div><p>No workers yet.<br>Add one by speaking or typing.</p></div>`;
@@ -565,47 +679,110 @@ function renderRecords() {
 
 function clearAllData() {
   if (!confirm('Clear all worker records?')) return;
-  workers = {}; persist(); renderRecords(); appendMsg('bot', 'All records cleared.');
+  workers = {}; persist(); renderRecords(); appendMsg('bot', 'All records cleared.', false);
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function openModal() {
   document.getElementById('modalBg').classList.remove('hidden');
-  document.getElementById('groqKeyInput').value = groqKey;
-  document.getElementById('supaUrlInput').value  = supaUrl;
-  document.getElementById('supaKeyInput').value  = supaKey;
+  document.getElementById('supaUrlInput').value = supaUrl;
+  document.getElementById('supaKeyInput').value = supaKey;
 }
 function closeModal() { document.getElementById('modalBg').classList.add('hidden'); }
 
 function saveSettings() {
-  const gk = document.getElementById('groqKeyInput').value.trim();
   const su = document.getElementById('supaUrlInput').value.trim();
   const sk = document.getElementById('supaKeyInput').value.trim();
-  if (gk) { groqKey = gk; localStorage.setItem('bolke_groq_key', gk); }
   if (su) { supaUrl = su; localStorage.setItem('bolke_supa_url', su); }
   if (sk) { supaKey = sk; localStorage.setItem('bolke_supa_key', sk); }
   initSupa(); updateUI(); closeModal();
-  const parts = [];
-  if (gk) parts.push('Groq AI enabled');
-  if (su && sk) parts.push('Supabase connected');
-  appendMsg('bot', '✅ Settings saved! ' + (parts.join('. ') || 'Nothing changed.'));
+  appendMsg('bot', su && sk ? '✅ Supabase connected! Loading data...' : '⚙️ Settings saved.', false);
   if (supa) loadFromSupa();
 }
 
+// ─── updateUI ─────────────────────────────────────────────────────────────────
 function updateUI() {
-  const pill = document.getElementById('dbStatus');
-  const txt  = document.getElementById('dbStatusText');
-  if (supa) { pill.className = 'status-pill connected'; txt.textContent = 'DB connected'; }
-  else      { pill.className = 'status-pill disconnected'; txt.textContent = 'DB not connected'; }
-  document.getElementById('keyNotice').style.display = groqKey ? 'none' : 'block';
-  document.getElementById('micHint').textContent = groqKey
-    ? 'Groq Whisper · Hindi, English & Hinglish ✓'
-    : 'Add Groq key in ⚙️ Settings to enable voice';
+  const pill    = document.getElementById('dbStatus');
+  const pillTxt = document.getElementById('dbStatusText');
+  const settBtn = document.getElementById('settingsBtn');
+  const banner  = document.getElementById('demoBanner');
+  const clearBtn = document.getElementById('clearBtn');
+
+  updateTTSBtn();
+
+  if (!isAuthorized) {
+    // ── Demo mode ──
+    pill.className = 'status-pill demo-mode';
+    pillTxt.textContent = 'Portfolio demo';
+    if (settBtn) settBtn.style.display = 'none';
+    if (banner)  banner.classList.remove('hidden');
+    if (clearBtn) clearBtn.style.display = 'none';
+    document.getElementById('micHint').textContent = 'Groq Whisper · Hindi, English & Hinglish';
+    // Load demo data if no real data
+    if (!Object.keys(workers).length) {
+      workers = JSON.parse(JSON.stringify(DEMO_WORKERS));
+    }
+    renderRecords();
+    return;
+  }
+
+  // ── Authorized mode ──
+  if (banner)  banner.classList.add('hidden');
+  if (settBtn) settBtn.style.display = '';
+  if (clearBtn) clearBtn.style.display = '';
+  document.getElementById('micHint').textContent = 'Groq Whisper · Hindi, English & Hinglish ✓';
+
+  if (supa) {
+    pill.className = 'status-pill connected';
+    pillTxt.textContent = 'DB connected';
+  } else {
+    pill.className = 'status-pill disconnected';
+    pillTxt.textContent = 'DB not connected';
+    pill.onclick = openModal;
+  }
 }
 
-// ─── AI (Groq LLaMA 3.3) ──────────────────────────────────────────────────────
+// ─── Demo responses ───────────────────────────────────────────────────────────
+function getDemoResponse(transcript) {
+  const t = (transcript || '').toLowerCase();
+
+  if (t.match(/nahi aay|nhi aay|absent|nahi aayi|nhi aayi/)) {
+    return `Samajh gaya! Aapne absence ke baare mein baat ki. 🙏\n\nLive app mein main yeh turant record kar deta. Yeh portfolio demo hai — aapki awaaz Groq Whisper ne pehchaani, lekin database mein likhna sirf authorized user ke liye hai.\n\n(Demo: In the live app, this absence would be logged instantly to Supabase PostgreSQL.)`;
+  }
+  if (t.match(/pay|kitna|dena|salary|paisa|mahine|mahina/)) {
+    return `Pay calculate karne ki request mili! 💰\n\nDemo data: Raju (₹8,000/mo) — 2 absent + 1 half day = ₹${Math.round(8000 - 2*(8000/26) - 0.5*(8000/26)).toLocaleString('en-IN')} net payable.\n\nLive app mein yeh automatically calculate ho jaata aur bol bhi deta. Yeh portfolio demo hai.`;
+  }
+  if (t.match(/half|aadha|aadhi/)) {
+    return `Half day note kar liya! 📝\n\nLive app mein half day turant record ho jaata aur sidebar update. Formula: Daily Rate ÷ 2 = ₹${Math.round(8000/26/2).toLocaleString('en-IN')} deduction.\n\nYeh portfolio demo hai — database writes authorized users ke liye reserved hain.`;
+  }
+  if (t.match(/add|jodo|jodi|naya|naya|new worker|worker add/)) {
+    return `Naya worker add karna chahte ho! 👷\n\nLive app mein naam aur salary Supabase PostgreSQL mein save ho jaati. Payroll ÷26 formula use hota (Indian standard — 26 working days/month).\n\nYeh portfolio demo hai. Demo mein Raju, Sunita, aur Geeta hain sidebar mein.`;
+  }
+  if (t.match(/hello|namaste|namaskar|hi |helo|kaise/)) {
+    return `Namaste! 🙏 Main Bolke hoon — ghar ke kaamwaale ka AI assistant.\n\nHindi, English, ya Hinglish — kisi bhi bhasha mein baat karo. Demo mein 3 workers hain: Raju, Sunita, aur Geeta. Sidebar mein dekho unka record!\n\nVoice input try karo — Groq Whisper se aapki awaaz actually transcribe ho rahi hai!`;
+  }
+  if (t.match(/geeta|gita/)) {
+    return `Geeta is mahine kaafi regular rahi hai! ✅\n\nGeeta ki salary ₹9,000/mo hai aur koi absence nahi — full ₹9,000 milenge.\n\nYeh demo data hai. Live app mein actual attendance track hoti.`;
+  }
+  if (t.match(/raju/)) {
+    return `Raju ka record:\n\n📋 Salary: ₹8,000/month\n  Absent: 2 days\n  Half day: 1\n  Net payable: ₹${Math.round(8000 - 2*(8000/26) - 0.5*(8000/26)).toLocaleString('en-IN')}\n\nYeh demo data hai. Live app mein real-time update hota aur Supabase mein save hota.`;
+  }
+  if (t.match(/sunita/)) {
+    return `Sunita ka record:\n\n📋 Salary: ₹7,500/month\n  Absent: 1 day\n  Half day: 1\n  Net payable: ₹${Math.round(7500 - 1*(7500/26) - 0.5*(7500/26)).toLocaleString('en-IN')}\n\nYeh demo data hai. Live app mein real attendance track hoti.`;
+  }
+
+  // Default
+  return `Shukriya! Aapne kaha: "${(transcript || '').substring(0, 60)}"\n\nYeh Bolke ka portfolio demo hai. Aapki awaaz actually Groq Whisper AI ne transcribe ki — yeh real voice recognition hai!\n\nLive app mein main aapki baat samajh kar kaam kar deta — absence log karna, salary calculate karna sab. Database access sirf authorized user ke liye hai.\n\n(Try: "Raju ka pay batao", "Sunita aaj nahi aayi", "Hello")`;
+}
+
+// ─── AI (Groq via Vercel function) ────────────────────────────────────────────
 async function callAI(userMessage) {
-  if (!groqKey) return { reply: 'Please add your Groq API key in ⚙️ Settings.', action: null, data: {} };
+  if (!isAuthorized) {
+    // Demo mode — contextual canned response, no API call needed
+    await new Promise(r => setTimeout(r, 700 + Math.random() * 400)); // realistic delay
+    return { reply: getDemoResponse(userMessage), action: null, data: {} };
+  }
+
   const system = `You are a friendly househelp absence tracker assistant for an Indian household. You understand Hindi, English, and Hinglish.
 Current worker data: ${JSON.stringify(workers, null, 2)}
 Today: ${new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
@@ -621,16 +798,28 @@ Action data shapes:
 Rules:
 - "nahi aaya" = absent | "aadha din"/"half day" = half | "add karo" = add worker
 - If name not in data, ask to add them first with their monthly salary
-- Use ₹ for amounts. Be warm and brief. Reply in the same language the user used.`;
+- Use rupee symbol for amounts. Be warm and brief. Reply in the same language the user used.`;
 
   chatHistory.push({ role: 'user', content: userMessage });
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+
+  const res = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + groqKey },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 1000, temperature: 0.3, messages: [{ role: 'system', content: system }, ...chatHistory] })
+    headers: { 'Content-Type': 'application/json', 'x-demo-token': authToken },
+    body: JSON.stringify({ messages: [{ role: 'system', content: system }, ...chatHistory] })
   });
+
+  if (res.status === 403) {
+    // Token invalid/expired — fall back to demo mode gracefully
+    isAuthorized = false; authToken = '';
+    localStorage.removeItem('bolke_token');
+    updateUI();
+    await new Promise(r => setTimeout(r, 600));
+    return { reply: getDemoResponse(userMessage), action: null, data: {} };
+  }
+
   const d = await res.json();
-  if (d.error) throw new Error(d.error.message);
+  if (d.error) throw new Error(d.error);
+
   const raw = d.choices?.[0]?.message?.content || '{}';
   let parsed;
   try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
@@ -641,6 +830,9 @@ Rules:
 
 // ─── Action handler ───────────────────────────────────────────────────────────
 async function handleAction(parsed) {
+  // No mutations in demo mode
+  if (!isAuthorized) return '';
+
   const { action, data } = parsed;
   if (action === 'add_worker' && data?.name) {
     const n = data.name.trim();
@@ -693,30 +885,47 @@ async function sendMessage(text) {
     appendMsg('bot', (parsed.reply || 'Done!') + (extra || ''));
   } catch(err) {
     hideTyping();
-    appendMsg('bot', 'Sorry, something went wrong.\n' + err.message);
+    appendMsg('bot', 'Sorry, something went wrong.\n' + err.message, false);
     console.error(err);
   }
   btn.disabled = false;
 }
 document.getElementById('userInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
-// ─── Voice (Groq Whisper) ─────────────────────────────────────────────────────
+// ─── Voice (Groq Whisper via Vercel function) ─────────────────────────────────
 let mediaRecorder = null, audioChunks = [], isRecording = false;
 
 function setMicState(state) {
   const btn = document.getElementById('micBtn');
   const sts = document.getElementById('micStatus');
   btn.className = ''; btn.disabled = false;
-  if (state === 'idle')       { btn.textContent = '🎤'; sts.textContent = 'Tap mic to speak'; }
-  else if (state === 'listening') { btn.classList.add('listening'); btn.textContent = '⏹'; sts.textContent = '🔴 Recording — tap to stop'; }
-  else if (state === 'processing'){ btn.classList.add('processing'); btn.textContent = '⏳'; sts.textContent = 'Converting speech...'; btn.disabled = true; }
+  if (state === 'idle')        { btn.textContent = '🎤'; sts.textContent = 'Tap mic to speak'; }
+  else if (state === 'listening')  { btn.classList.add('listening'); btn.textContent = '⏹'; sts.textContent = '🔴 Recording — tap to stop'; }
+  else if (state === 'processing') { btn.classList.add('processing'); btn.textContent = '⏳'; sts.textContent = 'Converting speech...'; btn.disabled = true; }
+}
+
+// Convert blob to base64 safely (FileReader handles large buffers)
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function toggleMic() {
-  if (!groqKey) { document.getElementById('keyNotice').style.display = 'block'; appendMsg('bot', 'Please add your Groq API key in ⚙️ Settings first.'); return; }
-  if (isRecording) { isRecording = false; if (mediaRecorder?.state !== 'inactive') mediaRecorder.stop(); return; }
-  if (location.protocol !== 'https:' && location.hostname !== 'localhost') { appendMsg('bot', '🚫 Mic requires HTTPS. Open your Vercel URL in Chrome.'); return; }
-  if (!navigator.mediaDevices?.getUserMedia) { appendMsg('bot', '🚫 Mic not supported on this browser. Please use Chrome.'); return; }
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    appendMsg('bot', '🚫 Mic requires HTTPS. Open your Vercel URL in Chrome.', false); return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    appendMsg('bot', '🚫 Mic not supported. Please use Chrome.', false); return;
+  }
+  if (isRecording) {
+    isRecording = false;
+    if (mediaRecorder?.state !== 'inactive') mediaRecorder.stop();
+    return;
+  }
 
   try {
     setMicState('listening');
@@ -737,25 +946,29 @@ async function toggleMic() {
     mediaRecorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
       setMicState('processing');
-      if (!audioChunks.length) { appendMsg('bot', '⚠ No audio captured. Try again.'); setMicState('idle'); return; }
+      if (!audioChunks.length) { appendMsg('bot', '⚠ No audio captured. Try again.', false); setMicState('idle'); return; }
+
       const blob = new Blob(audioChunks, { type: actualMime || 'audio/webm' });
       if (blob.size < 500) { document.getElementById('micStatus').textContent = 'Too short — speak and tap again'; setMicState('idle'); return; }
+
       let ext = 'webm';
       if (actualMime.includes('mp4')) ext = 'mp4';
       else if (actualMime.includes('ogg')) ext = 'ogg';
+
       try {
         document.getElementById('micStatus').textContent = 'Sending to Whisper...';
-        const fd = new FormData();
-        fd.append('file', blob, 'rec.' + ext);
-        fd.append('model', 'whisper-large-v3-turbo');
-        fd.append('language', 'hi');
-        fd.append('prompt', 'Househelp tracker. Absent, half day, salary. Nahi aaya, aadha din, kitna dena hai.');
-        const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-          method: 'POST', headers: { 'Authorization': 'Bearer ' + groqKey }, body: fd
+
+        const base64Audio = await blobToBase64(blob);
+        const res = await fetch('/api/voice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-demo-token': authToken },
+          body: JSON.stringify({ audio: base64Audio, mimeType: actualMime, ext })
         });
-        if (!res.ok) throw new Error('Whisper HTTP ' + res.status);
+
+        if (!res.ok) throw new Error('Voice API error: ' + res.status);
         const result = await res.json();
-        if (result.error) throw new Error(result.error.message);
+        if (result.error) throw new Error(result.error);
+
         const t = result.text?.trim();
         if (t) {
           document.getElementById('micStatus').textContent = `Heard: "${t.substring(0,42)}${t.length>42?'…':''}"`;
@@ -765,7 +978,10 @@ async function toggleMic() {
           document.getElementById('micStatus').textContent = 'Could not hear clearly. Try again.';
           setMicState('idle');
         }
-      } catch(err) { appendMsg('bot', '⚠ Voice error: ' + err.message); setMicState('idle'); }
+      } catch(err) {
+        appendMsg('bot', '⚠ Voice error: ' + err.message, false);
+        setMicState('idle');
+      }
     };
 
     mediaRecorder.start(100);
@@ -774,18 +990,46 @@ async function toggleMic() {
   } catch(err) {
     isRecording = false; setMicState('idle');
     if (err.name === 'NotAllowedError') {
-      appendMsg('bot', '🚫 Mic permission denied.\n\nFix: Tap 🔒 in Chrome → Site settings → Microphone → Allow → reload.');
+      appendMsg('bot', '🚫 Mic permission denied.\n\nFix: Tap 🔒 in Chrome → Site settings → Microphone → Allow → reload.', false);
     } else {
-      appendMsg('bot', '🚫 Mic error: ' + err.name + ' — ' + err.message);
+      appendMsg('bot', '🚫 Mic error: ' + err.name + ' — ' + err.message, false);
     }
   }
 }
 
+// ─── Welcome message ──────────────────────────────────────────────────────────
+function showWelcome() {
+  const chatEl = document.getElementById('chatMessages');
+  chatEl.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot';
+  const lbl = document.createElement('div'); lbl.className = 'msg-label'; lbl.textContent = 'Bolke';
+  const bub = document.createElement('div'); bub.className = 'msg-bubble';
+
+  if (isAuthorized) {
+    bub.innerHTML = `Namaste! 🙏 Main aapka ghar ka sahayak hoon.<br><br>Speak or type in <strong>Hindi, English, or Hinglish</strong>:<br>• "Raju aaj nahi aaya"<br>• "Sunita half day thi kal"<br>• "Geeta ko add karo — ₹8,000/month"<br>• "Sabka pay batao"`;
+  } else {
+    bub.innerHTML = `Namaste! 🙏 Welcome to the <strong>Bolke</strong> portfolio demo.<br><br>This is a real AI voice assistant built for an Indian household — for my mother to track her househelp attendance by just speaking.<br><br>🎤 <strong>Voice works</strong> — tap the mic and say something in Hindi or English<br>🔊 <strong>Voice replies</strong> are enabled — you'll hear me speak back<br>👁️ <strong>Records panel</strong> shows sample data (right side on desktop)<br><br><em>Database writes are restricted. All else is real.</em>`;
+  }
+
+  wrap.appendChild(lbl); wrap.appendChild(bub);
+  chatEl.appendChild(wrap);
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
+initAuth();
 initSupa();
 updateUI();
+showWelcome();
 renderRecords();
-if (supa) setTimeout(() => { appendMsg('bot', '🔄 Loading from Supabase...'); loadFromSupa(); }, 700);
+updateTTSBtn();
+
+if (isAuthorized && supa) {
+  setTimeout(() => {
+    appendMsg('bot', '🔄 Loading from Supabase...', false);
+    loadFromSupa();
+  }, 700);
+}
 </script>
 </body>
 </html>

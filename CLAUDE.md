@@ -1,117 +1,178 @@
 # CLAUDE.md — Instructions for AI Assistants Working on This Codebase
 
-This file tells Claude (or any AI assistant) how to work effectively on the Househelp Tracker project.
+This file tells Claude (or any AI assistant) how to work effectively on the Bolke project.
 
 ---
 
 ## Project Overview
 
-Househelp Tracker is a **single-file web application** — the entire codebase lives in `househelp-tracker.html`. There is no build system, no package manager, no separate JS/CSS files. Everything is inline.
+Bolke is a **voice-first AI assistant** for Indian households — tracks househelp attendance and computes payroll via natural conversation in Hindi, English, or Hinglish. Built for real use by a non-technical user (paralysed mother).
+
+**Architecture:** Single HTML file (`index.html`) + two Vercel serverless functions (`api/chat.js`, `api/voice.js`). No build step, no bundler.
+
+---
+
+## File Structure
+
+```
+bolke/
+├── index.html       ← Entire frontend (HTML + CSS + JS, ~850 lines)
+├── api/
+│   ├── chat.js      ← Vercel function: proxies LLaMA 3.3 chat, token-gated
+│   └── voice.js     ← Vercel function: proxies Whisper STT, open to all
+├── vercel.json      ← Vercel config (maxDuration: 30s for both functions)
+├── package.json     ← Metadata only — no runtime dependencies
+├── .env.example     ← Documents required Vercel env vars
+├── README.md
+└── CLAUDE.md        ← This file
+```
 
 ---
 
 ## Architecture at a Glance
 
 ```
-househelp-tracker.html
+index.html
 ├── <style>          → All CSS, inline
-├── <body>           → HTML structure
+├── <body>           → HTML structure + demo banner + TTS toggle
 └── <script>         → All JavaScript, inline
-    ├── State        → workers{}, chatHistory[], scriptUrl, openaiKey, ttsEnabled
-    ├── UI helpers   → appendMsg(), renderRecords(), showTyping()
-    ├── Sheets sync  → syncToSheets(), loadFromSheets(), saveData()
-    ├── Modal        → openModal(), closeModal(), saveSettings()
-    ├── callAI()     → Groq LLaMA 3.3 chat completion
-    ├── handleAction()→ Mutates workers{} based on LLM intent
-    ├── sendMessage() → Orchestrates full user message → AI reply flow
-    ├── toggleMic()  → MediaRecorder + Groq Whisper STT
-    ├── TTS          → speak(), toggleTTS(), loadVoices()
-    └── Init         → Runs on page load
+    ├── State        → workers{}, chatHistory[], authToken, isAuthorized, ttsEnabled
+    ├── DEMO_WORKERS → Hardcoded sample data shown to unauthenticated visitors
+    ├── initAuth()   → Reads ?token= from URL → localStorage; sets isAuthorized
+    ├── speak()      → Web Speech API TTS (hi-IN, toggleable)
+    ├── toggleTTS()  → Toggles ttsEnabled + persists to localStorage
+    ├── Supabase     → initSupa(), loadFromSupa(), saveWorkerSupa(), saveAbsenceSupa()
+    ├── UI helpers   → appendMsg(), renderRecords(), showTyping(), showWelcome()
+    ├── Settings     → openModal(), closeModal(), saveSettings() [Supabase only]
+    ├── updateUI()   → Demo mode vs authorized mode rendering
+    ├── getDemoResponse() → Context-aware canned responses for demo visitors
+    ├── callAI()     → Calls /api/chat (authorized) or returns demo response
+    ├── handleAction()→ Mutates workers{} — skipped in demo mode
+    ├── sendMessage() → Orchestrates full message → AI reply → TTS flow
+    ├── toggleMic()  → MediaRecorder → base64 → /api/voice → Whisper → sendMessage
+    └── Init         → initAuth(), initSupa(), updateUI(), showWelcome()
+
+api/chat.js
+└── POST /api/chat   → Checks x-demo-token header vs DEMO_TOKEN env var
+                       → 403 if mismatch (frontend falls back to demo response)
+                       → Proxies to Groq LLaMA 3.3 70B if authorized
+
+api/voice.js
+└── POST /api/voice  → No token required (transcription only, no data risk)
+                       → Receives base64 audio in JSON body
+                       → Reconstructs blob → FormData → Groq Whisper
+                       → Returns { text: "transcribed text" }
+```
+
+---
+
+## Security Model
+
+| Layer | How it works |
+|---|---|
+| Groq API key | Lives in Vercel env vars (`GROQ_API_KEY`). Never in HTML. Never in browser. |
+| DEMO_TOKEN | Lives in Vercel env vars. Visitor gets it once via `?token=SECRET` URL. Saved to localStorage. Sent as `x-demo-token` header on every `/api/chat` request. |
+| Supabase | Anon key in localStorage (safe — designed to be public). RLS policies control row access. |
+| Demo mode | No token → frontend returns canned response, no LLaMA call, no DB write. Whisper still works (voice showcase). |
+
+---
+
+## Key State Variables
+
+```javascript
+let workers      = {};          // { "Name": { _id, monthlySalary, absences: [{date, type}] } }
+let chatHistory  = [];          // OpenAI-format messages for multi-turn context
+let authToken    = '';          // From localStorage('bolke_token')
+let isAuthorized = false;       // !!authToken
+let ttsEnabled   = true;        // Persisted to localStorage('bolke_tts')
+let supaUrl      = '';          // Persisted to localStorage('bolke_supa_url')
+let supaKey      = '';          // Persisted to localStorage('bolke_supa_key')
+let supa         = null;        // Supabase client instance (null if not configured)
 ```
 
 ---
 
 ## Key Conventions
 
-### State Management
-- All application state lives in the `workers` object: `{ "Name": { monthlySalary, absences: [{date, type}] } }`
-- `saveData()` must be called after every mutation — it writes to both localStorage AND Google Sheets
-- Never mutate `workers` directly without calling `saveData()` and `renderRecords()` after
+### Token flow
+```
+User visits bolke.vercel.app?token=SECRET
+→ initAuth() saves to localStorage, cleans URL
+→ isAuthorized = true
+→ subsequent visits to bolke.vercel.app use stored token
 
-### LLM Output Contract
-The LLM (Groq LLaMA) is always instructed to return **raw JSON only** — no markdown, no code fences:
+Portfolio visitor visits bolke.vercel.app (no token)
+→ isAuthorized = false → demo mode
+→ demo banner shown, DEMO_WORKERS loaded, settings button hidden
+```
+
+### LLM Output Contract (authorized mode only)
+The LLM always returns **raw JSON** — no markdown, no code fences:
 ```json
 { "reply": "...", "action": "log_absence|add_worker|calculate_pay|null", "data": {} }
 ```
-The parser in `callAI()` strips markdown fences as a fallback but the prompt enforces raw JSON.
+`handleAction()` parses this. Always keep these exact field names.
 
-### API Calls
-- **Chat:** `POST https://api.groq.com/openai/v1/chat/completions` — model `llama-3.3-70b-versatile`
-- **Voice STT:** `POST https://api.groq.com/openai/v1/audio/transcriptions` — model `whisper-large-v3-turbo`
-- **Storage:** `POST [user-configured Apps Script URL]` — actions `save` and `load`
-- All API keys are stored in localStorage and passed at runtime — **never hardcoded**
+### appendMsg signature
+```javascript
+appendMsg(role, htmlText, autoSpeak = true)
+// autoSpeak = false for system/status messages (Supabase loaded, errors etc.)
+// autoSpeak = true for real conversation replies (default)
+```
 
-### Payroll Calculation
-- Base: 26 working days/month (Indian standard — do not change this constant without discussion)
-- Half day = deduct 0.5 × daily rate
-- Full absent = deduct 1 × daily rate
+### Voice flow
+```
+toggleMic() → MediaRecorder → Blob → blobToBase64() → POST /api/voice
+→ { text: "heard text" } → sendMessage(text) → callAI() → appendMsg() → speak()
+```
+
+### Audio encoding
+Audio is sent as **base64 JSON** (not multipart FormData) from browser to `/api/voice`.
+`api/voice.js` reconstructs `Buffer.from(audio, 'base64')` → `new Blob([buffer])` → FormData for Groq.
 
 ---
 
 ## What to Watch Out For
 
 ### Do NOT
-- Add external `<script src="...">` dependencies — the app must remain self-contained
+- Add external `<script src="...">` dependencies — single-file constraint
 - Use `innerHTML` with user-provided content without sanitisation
-- Hardcode any API keys, URLs, or credentials
-- Change the `sendMessage(text)` signature — it accepts both direct text (from voice) and reads the input field when called without arguments
+- Hardcode `GROQ_API_KEY` or `DEMO_TOKEN` in HTML or JS
+- Change `sendMessage(text)` signature — used by both keyboard input and voice
 - Break the JSON output contract in the system prompt — `handleAction()` depends on exact field names
+- Call Supabase write functions when `isAuthorized === false`
+- Add `node_modules` or `"type": "module"` to package.json (breaks Vercel CommonJS functions)
 
 ### Always
-- Call `saveData()` after any mutation to `workers`
+- Call `persist()` after any mutation to `workers`
 - Call `renderRecords()` after any mutation to `workers`
-- Keep the single-file constraint — do not split into multiple files
-- Test voice flow end-to-end after any changes to `toggleMic()` or `sendMessage()`
-- Preserve the `language: 'hi'` parameter in the Whisper API call
+- Use `autoSpeak = false` for status/system messages in `appendMsg()`
+- Keep `module.exports = async function handler(req, res)` in both api files (Vercel CommonJS)
+- Test both demo mode (no token) and authorized mode after changes
 
 ---
 
-## Common Tasks
+## Vercel Environment Variables Required
 
-### Adding a new intent/action
-1. Add the intent name to the system prompt's action enum
-2. Add data shape to the system prompt's action data shapes section
-3. Add a handler block in `handleAction()`
-4. Test with both typed and voice input
+| Variable | Where used |
+|---|---|
+| `GROQ_API_KEY` | `api/chat.js` and `api/voice.js` |
+| `DEMO_TOKEN` | `api/chat.js` (checked against `x-demo-token` header) |
 
-### Changing the LLM model
-- Only change the `model` field in `callAI()`
-- Must be a Groq-hosted model with OpenAI-compatible API
-- Keep temperature at 0.3 or lower for consistent JSON output
-
-### Changing the STT model
-- Only change the `model` field in the Whisper `formData.append` call inside `toggleMic()`
-- Must support `language: 'hi'` parameter
-
-### Adding a new settings field
-1. Add input to the modal HTML
-2. Add a `let varName = localStorage.getItem('hht_key') || ''` state variable
-3. Populate field in `openModal()`
-4. Save in `saveSettings()`
-5. Use in relevant function
-
-### Modifying Google Sheets sync
-- The Apps Script code is embedded in the `GAS_CODE` constant in the HTML
-- If you change the Sheets schema (add columns), update both the Apps Script code AND the `loadFromSheets()` parser
+Set them at: vercel.com → Project → Settings → Environment Variables
 
 ---
 
-## Environment
+## Payroll Formula
 
-- **Runtime:** Browser (Chrome on Android primarily, Chrome desktop secondary)
-- **No Node.js, no build step, no compilation**
-- **HTTPS required** for microphone access (`getUserMedia` is blocked on HTTP)
-- **localStorage** is the source of truth on load; Google Sheets overwrites it asynchronously
+```
+Daily Rate      = Monthly Salary ÷ 26    (Indian standard: 26 working days/month)
+Full Deduction  = Absent Days × Daily Rate
+Half Deduction  = Half Days × (Daily Rate ÷ 2)
+Net Payable     = Monthly Salary − Full Deduction − Half Deduction
+```
+
+**Do not change the ÷26 constant without discussion** — it's Indian payroll standard.
 
 ---
 
@@ -119,11 +180,63 @@ The parser in `callAI()` strips markdown fences as a fallback but the prompt enf
 
 Before committing any change, verify:
 
-- [ ] Typing a message works and gets a reply
-- [ ] Voice input records, transcribes, and sends correctly
-- [ ] Absence logging updates the sidebar records panel
+**Demo mode (no token in localStorage):**
+- [ ] Demo banner visible in chat panel
+- [ ] Settings gear button hidden
+- [ ] DEMO_WORKERS loaded in records panel with "demo" badge
+- [ ] Typing a message returns a contextual demo response + TTS speaks it
+- [ ] Mic records, /api/voice transcribes (real Whisper), sends to sendMessage()
+- [ ] No Supabase writes attempted
+
+**Authorized mode (token in localStorage):**
+- [ ] Demo banner hidden, settings gear visible
+- [ ] Typing a message calls /api/chat and gets real LLaMA response
+- [ ] Absence logging updates sidebar records
 - [ ] Pay calculation returns correct figures
-- [ ] Settings modal saves and restores all fields on re-open
-- [ ] Google Sheets sync fires after a data mutation (check network tab)
-- [ ] TTS speaks the reply when Voice Reply is enabled
-- [ ] App loads correctly on mobile Chrome
+- [ ] Settings modal opens, saves Supabase URL+key, triggers loadFromSupa()
+- [ ] TTS speaks bot replies when enabled
+- [ ] TTS toggle button switches between 🔊 and 🔇
+
+**Voice flow (both modes):**
+- [ ] Mic button shows recording animation
+- [ ] "Heard: ..." text appears after stopping
+- [ ] Response appears and is spoken
+
+---
+
+## Common Tasks
+
+### Adding a new intent/action
+1. Add intent name to system prompt's action enum in `callAI()`
+2. Add data shape to system prompt's action shapes section
+3. Add a handler block in `handleAction()`
+4. Add a case in `getDemoResponse()` for demo mode
+5. Test with both typed and voice input
+
+### Changing TTS language/voice
+- Change `utt.lang` in `speak()` — currently `'hi-IN'`
+- Rate and pitch are tuned for Hindi: rate=0.88, pitch=1.0
+- Voice selection tries to find `hi-IN` or `hi` voices first
+
+### Rotating the DEMO_TOKEN
+- Generate a new token: `openssl rand -hex 24`
+- Update in Vercel env vars
+- Share new URL with household owner: `https://your-app.vercel.app?token=NEW_TOKEN`
+- Old token stops working immediately after Vercel redeploy
+
+### Adding a new worker field
+1. Add column to the Supabase SQL (update `SETUP_SQL` constant in index.html)
+2. Update `saveWorkerSupa()` upsert
+3. Update `loadFromSupa()` parser
+4. Update `workers` state shape
+5. Update `renderRecords()` worker card
+6. Update system prompt worker data format
+
+---
+
+## Environment
+
+- **Runtime:** Browser (Chrome on Android primarily) + Vercel Node.js 18
+- **No build step, no compilation, no bundler**
+- **HTTPS required** for microphone access
+- **localStorage** is source of truth on load; Supabase overwrites asynchronously (authorized mode only)
