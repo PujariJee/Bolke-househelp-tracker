@@ -929,6 +929,9 @@ showWelcome();
 renderRecords();
 updateTTSBtn();
 
+// Speak greeting on page load — delay gives browser time to load voices
+setTimeout(() => speak('Namaste! Aapka Piyush Pujari ke ghar ke household tracker application, Bolke, mein swagat hai.'), 800);
+
 if (isAuthorized && supa) {
   setTimeout(() => {
     appendMsg('bot', '🔄 Loading from Supabase...', false);
