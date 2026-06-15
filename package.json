@@ -29,7 +29,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "msgpackr": "^1.10.1"
+  },
   "devDependencies": {},
   "scripts": {
     "start": "open househelp-tracker.html",
